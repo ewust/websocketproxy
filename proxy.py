@@ -10,7 +10,9 @@ def get_content(url):
     response = yield from aiohttp.request('GET', url)
 
     data = yield from response.read()
-    return data
+
+    headers = {k: response.headers[k] for k in response.headers.keys()}
+    return headers, data
 
 @asyncio.coroutine
 def hello(websocket, path):
@@ -22,9 +24,10 @@ def hello(websocket, path):
         obj = json.loads(msg)
         url = obj['url']
 
-        resp = yield from get_content(url)
+        headers, data = yield from get_content(url)
+        ret_obj = {'headers': headers, 'data': str(data,'utf8')}
 
-        yield from websocket.send(resp)
+        yield from websocket.send(json.dumps(ret_obj))
 
 
 start_server = websockets.serve(hello, 'localhost', 8765)
