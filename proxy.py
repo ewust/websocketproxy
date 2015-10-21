@@ -3,31 +3,14 @@
 import asyncio
 import websockets
 import json
-import urllib.parse
+import aiohttp
 
 @asyncio.coroutine
 def get_content(url):
-    url = urllib.parse.urlsplit(url)
-    if url.scheme == 'https':
-        connect = asyncio.open_connection(url.hostname, 443, ssl=True)
-    else:
-        connect = asyncio.open_connection(url.hostname, 80)
-    reader, writer = yield from connect
-    query = ('GET {path} HTTP/1.0\r\n'
-             'Host: {hostname}\r\n'
-             '\r\n').format(path=url.path or '/', hostname=url.hostname)
-    writer.write(query.encode('utf8'))
-    buf = b''
-    while True:
-        tmp = yield from reader.read()
-        if not tmp:
-            break
-        buf += tmp
+    response = yield from aiohttp.request('GET', url)
 
-    # Ignore the body, close the socket
-    writer.close()
-    return buf
-
+    data = yield from response.read()
+    return data
 
 @asyncio.coroutine
 def hello(websocket, path):
